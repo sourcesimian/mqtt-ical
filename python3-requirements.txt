@@ -1,0 +1,5 @@
+PyYAML
+paho-mqtt
+icalendar==4.0.3
+recurring-ical-events
+gevent
