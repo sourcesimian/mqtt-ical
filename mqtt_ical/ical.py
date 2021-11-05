@@ -19,6 +19,7 @@ class ICal(object):
         self._calendars = {}
         self._events = {}
         self._next_update = None
+        self._last_update = None
 
     def open(self):
         logging.info("Open")
@@ -39,7 +40,7 @@ class ICal(object):
         return gevent.spawn(loop)
 
     def register(self, url, match, on_state_change):
-        sched = ICalSchedule(match, on_state_change)
+        sched = ICalSchedule(match, on_state_change, self._on_update_now)
         if url not in self._calendars:
             self._calendars[url] = []
         self._calendars[url].append(sched)
@@ -50,6 +51,12 @@ class ICal(object):
         now = self._now()
         self._update(now)
     
+    def _on_update_now(self):
+        if self._last_update and (self._now() - self._last_update) < timedelta(seconds=3):
+            return
+        self.update_now()
+        self._last_update = self._now()
+
     def _update(self, now):
         self._update_events(now)
         self._update_states(now)
@@ -113,10 +120,12 @@ class ICal(object):
         calendar = icalendar.Calendar.from_ical(ical_string)
         return calendar
 
+
 class ICalSchedule(object):
-    def __init__(self, match, on_state_change):
+    def __init__(self, match, on_state_change, on_update_now):
         self._match = match
         self._on_state_change = on_state_change
+        self._on_update_now = on_update_now
         self._state = None
         self._enable = True
 
@@ -135,6 +144,7 @@ class ICalSchedule(object):
     
     def enable(self, enable):
         if enable and enable != self._enable:
+            self._on_update_now()
             logging.info('%s and Switching: %s', 'Enabled' if enable else 'Disabled', self._state)
             self._on_state_change(self._state)
         

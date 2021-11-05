@@ -45,10 +45,11 @@ class Binding(object):
         self._channel_map[self._blob_id(blob)]['mqtt'].set_state(payload)
 
     def _on_mqtt(self, blob, value, timestamp):
+        ical = self._channel_map[self._blob_id(blob)]['ical']
         if value == blob['mqtt']['mode']['enable']:
-            self._channel_map[self._blob_id(blob)]['ical'].enable(True)
+            ical.enable(True)
         elif value == blob['mqtt']['mode']['disable']:
-            self._channel_map[self._blob_id(blob)]['ical'].enable(False)
+            ical.enable(False)
         else:
             logging.warning('Unrecognised mode: %s', value)
 
