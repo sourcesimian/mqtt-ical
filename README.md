@@ -1,29 +1,138 @@
 MQTT iCal <!-- omit in toc -->
 ===
 
-***iCal Calendar to MQTT connector service***
+***iCal Calendar to MQTT bridge service***
 
-A service which controls the values on selected MQTT topics via events in an iCal Calendar, configurable by YAML.
+A service which publishes values to MQTT topics based on events in an iCal Calendar, configurable by YAML. For example this allows you to hookup events in your Google Calendars to topics on your MQTT broker.
 
-# Containerization
-Example `Dockerfile`:
+- [Installation](#installation)
+  - [Docker](#docker)
+  - [MQTT Broker](#mqtt-broker)
+- [Configuration](#configuration)
+  - [iCal](#ical)
+  - [MQTT](#mqtt)
+    - [MQTT - Basic Auth](#mqtt---basic-auth)
+    - [MQTT - mTLS Auth](#mqtt---mtls-auth)
+  - [Web Server](#web-server)
+  - [Logging](#logging)
+  - [Bindings](#bindings)
+- [Contribution](#contribution)
+  - [Development](#development)
+- [License](#license)
+
+# Installation
+Prebuilt container images are available on [Docker Hub](https://hub.docker.com/r/sourcesimian/mqtt-ical).
+## Docker
+Run
+```
+mkdir -p $HOME/.cache/mqtt-ical
+
+docker run -n mqtt-ical -d -it --rm -p 8080:8080 \
+    --volume my-config.yaml:/config.yaml:ro \
+    sourcesimian/mqtt-ical:latest
+```
+## MQTT Broker
+An installation of **mqtt-gpio** will need a MQTT broker to connect to. There are many possibilities available. [Eclipse Mosquitto](https://github.com/eclipse/mosquitto/blob/master/README.md) is a great self hosted option with many installation options including prebuilt containers on [Docker Hub](https://hub.docker.com/_/eclipse-mosquitto).
+
+To compliment **mqtt-ical** you might consider using [mqtt-panel](https://github.com/sourcesimian/mqtt-panel/blob/main/README.md) and [mqtt-gpio](https://github.com/sourcesimian/mqtt-gpio/blob/main/README.md).
+
+# Configuration
+**mqtt-ical** consumes a single [YAML](https://yaml.org/) file. To start off you can copy [config-basic.yaml](./config-basic.yaml)
+
+## iCal
 
 ```
-FROM python:3.9-slim
-
-COPY mqtt-gpio/python3-requirements.txt /
-RUN pip3 install -r python3-requirements.txt
-
-COPY mqtt-ical/setup.py /
-COPY mqtt-ical/mqtt_ical /mqtt_ical
-RUN python3 /setup.py develop
-
-COPY my-config.yaml /config.yaml
-
-ENTRYPOINT ["/usr/local/bin/mqtt-ical", "/config.yaml"]
+ical:
+  poll-period: <seconds>        # Interval at which iCal calendars are polled. Default: 3600
+  reload-topic: <topic>         # optional: MQTT topic to listen for forced updates
+  reload-payload: <string>      #           MQTT payload which will trigger an update. Default: RELOAD
+  cache-duration: <seconds>     # Duration to cache iCal events when updates are failing. Default: 86400
+  fetch-window: <seconds>       # Duration ahead of time to fetch. Default 86400
 ```
 
-# Development
+## MQTT
+```
+mqtt:
+  host: <host>                  # optional: MQTT broker host, default: 127.0.0.1
+  port: <port>                  # optional: MQTT broker port, default 1883
+  client-id: mqtt-gpio          # MQTT client identifier, often brokers require this to be unique
+  topic-prefix: <topic prefix>  # optional: Scopes the MQTT topic prefix
+  auth:                         # optional: Defines the authentication used to connect to the MQTT broker
+    type: <type>                # Auth type: none|basic|mtls, default: none
+    ... (<type> specific options)
+```
+
+### MQTT - Basic Auth
+```
+    type: basic
+    username: <string>          # MQTT broker username
+    password: <string>          # MQTT broker password
+```
+
+### MQTT - mTLS Auth
+```
+    type: mtls
+    cafile: <file>              # CA file used to verify the server
+    certfile: <file>            # Certificate presented by this client
+    keyfile: <file>             # Private key presented by this client
+    keyfile_password: <string>  # optional: Password used to decrypt the `keyfile`
+    protocols:
+      - <string>                # optional: list of ALPN protocols to add to the SSL connection
+```
+
+## Web Server
+```
+http:
+  bind: <bind>                  # optional: Interface on which web server will listen, default 0.0.0.0
+  port: <port>                  # Port on which web server will listen, default 8080
+  max-connections: <integer>    # optional: Limit the number of concurrent connections, default 100
+```
+
+The web server exposes the following API:
+* `/api/health` - Responds with 200 if service is healthy
+* `/api/update` - Force the the service to reload the calendar cache
+
+## Logging
+```
+logging:                        # Logging settings
+  level: INFO                   # optional: Logging level, default DEBUG
+```
+
+## Bindings
+A binding is a functional element, which is used to connect events in an iCal calendar to MQTT topics and payloads.
+
+Bindings are defined under the `bindings` key:
+```
+bindings:
+- ...
+```
+All bindings have the following form:
+```
+  - type: event                 # Binding type: event
+    ical:
+      match: <string>           # Event summary text to match
+      url: <iCal URL>           # URL to iCal Calendar
+    mqtt:
+      state:
+        topic: <topic>          # MQTT topic to publish to
+        default: <string>       # Default payload
+        active: <string>        # Payload published when event is active
+        qos: [0 | 1 | 2]        # optional: MQTT QoS to use, default: 1
+        retain: [False | True]  # optional: Publish with MQTT retain flag, default: False
+      mode:
+        topic: <topic>          # optional: MQTT topic to control mode
+        enable: <string>        #           Payload to enable binding. Default: AUTO
+        disable: <string>       #           Payload to disable binding. Default: MANUAL
+
+```
+The `mqtt/mode/topic` can be used to disable the binding from publishing to `mqtt/state/topic` by setting the disable payload. When set to enable payload, the calendar will be reloaded, and `mqtt/state/topic` will be updated.
+
+# Contribution
+Yes sure! And please. I built **mqtt-ical** to act as a microservice in a MQTT ecosystem. The cababilities can most likely be replicated using one of the home automation soltutions. However, I like the componentised way of connecting iCal events to a MQTT topic.
+
+Before pushing a PR please ensure that `make check` and `make test` are clean and please consider adding unit tests.
+
+## Development
 Setup the virtualenv:
 
 ```
@@ -32,12 +141,10 @@ python3 -m venv virtualenv
 python3 ./setup.py develop
 ```
 
-Run the server:
-
+Run the service:
 ```
 mqtt-ical ./config-demo.yaml
 ```
 
 # License
-
 In the spirit of the Hackers of the [Tech Model Railroad Club](https://en.wikipedia.org/wiki/Tech_Model_Railroad_Club) from the [Massachusetts Institute of Technology](https://en.wikipedia.org/wiki/Massachusetts_Institute_of_Technology), who gave us all so very much to play with. The license is [MIT](LICENSE).

@@ -1,0 +1,66 @@
+# Basic config file for mqtt-ical
+
+ical:
+  poll-period: 300       # How frequently to poll iCal Calendars
+  cache-duration: 86400  # How long to cache events when iCal poll fails
+  fetch-window: 86400    # How far in advance to fetch events
+  reload-topic: reload   # MQTT topic to listen for forced updates
+  reload-payload: RELOAD # MQTT payload which will trigger an update
+
+mqtt:
+  host: broker.emqx.io
+  port: 1883
+  client-id: mqtt-ical-demo
+  topic-prefix: demo/mqtt-ical
+
+http:
+  port: 8080
+
+logging:
+  level: INFO
+
+bindings:
+
+  - type: event
+    ical:
+      match: "Morning"
+      url: "https://calendar.google.com/calendar/ical/9lmgcb7dk1gs8tulr8fctc4mfg%40group.calendar.google.com/private-d6909b7ca113276ab221b59fd1dc1015/basic.ics"
+    mqtt:
+      state:
+        topic: time/morning
+        default: "NO"
+        active: "MORNING"
+        retain: True
+        qos: 1
+      mode:
+        topic: mode
+
+  - type: event
+    ical:
+      match: "Day Time"
+      url: "https://calendar.google.com/calendar/ical/9lmgcb7dk1gs8tulr8fctc4mfg%40group.calendar.google.com/private-d6909b7ca113276ab221b59fd1dc1015/basic.ics"
+    mqtt:
+      state:
+        topic: time/day
+        default: "NO"
+        active: "DAY"
+        retain: True
+        qos: 1
+      mode:
+        topic: mode
+        enable: AUTO
+        disable: MANUAL
+
+  - type: event
+    ical:
+      match: "Night"
+      url: "https://calendar.google.com/calendar/ical/9lmgcb7dk1gs8tulr8fctc4mfg%40group.calendar.google.com/private-d6909b7ca113276ab221b59fd1dc1015/basic.ics"
+    mqtt:
+      state:
+        topic: time/night
+        default: "NO"
+        active: "NIGHT"
+        retain: True
+        qos: 1
+      mode:
+        topic: mode

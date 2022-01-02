@@ -1,6 +1,7 @@
 import logging
 
-class MqttNode(object):
+
+class MqttNode:
     def __init__(self, mqtt, state_path, retain, qos, mode_path, on_mode=None):
         self._mqtt = mqtt
         self._state_path = state_path
@@ -21,10 +22,10 @@ class MqttNode(object):
         logging.info("Publish %s: %s", self._state_path, value)
         self._mqtt.publish(self._state_path, payload=value, qos=self._qos, retain=self._retain)
 
-    def status(self, payload):
-        if not self._status_path:
-            return
-        if not isinstance(payload, str):
-            payload = json.dumps(payload, sort_keys=True)
+    # def status(self, payload):
+    #     if not self._status_path:
+    #         return
+    #     if not isinstance(payload, str):
+    #         payload = json.dumps(payload, sort_keys=True)
 
-        self._mqtt.publish(self._status_path, payload=payload, qos=0, retain=True)
+    #     self._mqtt.publish(self._status_path, payload=payload, qos=0, retain=True)
