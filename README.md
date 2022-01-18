@@ -7,8 +7,9 @@ A service which publishes values to MQTT topics based on events in an iCal Calen
 
 - [Installation](#installation)
   - [Docker](#docker)
-  - [MQTT Broker](#mqtt-broker)
+  - [MQTT Infrastructure](#mqtt-infrastructure)
 - [Configuration](#configuration)
+  - [Conventions](#conventions)
   - [iCal](#ical)
   - [MQTT](#mqtt)
     - [MQTT - Basic Auth](#mqtt---basic-auth)
@@ -25,29 +26,38 @@ Prebuilt container images are available on [Docker Hub](https://hub.docker.com/r
 ## Docker
 Run
 ```
-mkdir -p $HOME/.cache/mqtt-ical
-
 docker run -n mqtt-ical -d -it --rm -p 8080:8080 \
     --volume my-config.yaml:/config.yaml:ro \
     sourcesimian/mqtt-ical:latest
 ```
-## MQTT Broker
-An installation of **mqtt-gpio** will need a MQTT broker to connect to. There are many possibilities available. [Eclipse Mosquitto](https://github.com/eclipse/mosquitto/blob/master/README.md) is a great self hosted option with many installation options including prebuilt containers on [Docker Hub](https://hub.docker.com/_/eclipse-mosquitto).
+## MQTT Infrastructure
+An installation of **mqtt-ical** will need a MQTT broker to connect to. There are many possibilities available. [Eclipse Mosquitto](https://github.com/eclipse/mosquitto/blob/master/README.md) is a great self-hosted option with many ways of installation including pre-built containers on [Docker Hub](https://hub.docker.com/_/eclipse-mosquitto).
 
-To compliment **mqtt-ical** you might consider using [mqtt-panel](https://github.com/sourcesimian/mqtt-panel/blob/main/README.md) and [mqtt-gpio](https://github.com/sourcesimian/mqtt-gpio/blob/main/README.md).
+To compliment your MQTT infrastructure you may consider the following other microservices:
+| Service | Description |
+|---|---|
+| [mqtt-gpio](https://github.com/sourcesimian/mqtt-gpio/blob/main/README.md) | Connects MQTT topics to GPIO pins. |
+| [mqtt-panel](https://github.com/sourcesimian/mqtt-panel/blob/main/README.md) | A self hostable service that connects to a MQTT broker and serves a progressive web app panel. |
 
 # Configuration
 **mqtt-ical** consumes a single [YAML](https://yaml.org/) file. To start off you can copy [config-basic.yaml](./config-basic.yaml)
+
+## Conventions
+The following are conventions that are used in the YAML configuration:
+| Item | Description |
+|---|---|
+| `<string>` | Any string of characters, preferably "quoted" to avoid YAML from interpreting in a different way. |
+| `<topic>` | A MQTT topic, e.g. `fizz/buzz/status`. Subscriptions can also accept the `*` and `#` wildcards. Use "quotes" to ensure that the `#` is not interpreted as a comment.
 
 ## iCal
 
 ```
 ical:
-  poll-period: <seconds>        # Interval at which iCal calendars are polled. Default: 3600
+  poll-period: <seconds>        # optional: Interval at which iCal calendars are polled. Default: 3600
   reload-topic: <topic>         # optional: MQTT topic to listen for forced updates
   reload-payload: <string>      #           MQTT payload which will trigger an update. Default: RELOAD
-  cache-duration: <seconds>     # Duration to cache iCal events when updates are failing. Default: 86400
-  fetch-window: <seconds>       # Duration ahead of time to fetch. Default 86400
+  cache-duration: <seconds>     # optional: Duration to cache iCal events when updates are failing. Default: 86400
+  fetch-window: <seconds>       # optional: Duration ahead of time to fetch. Default 86400
 ```
 
 ## MQTT
@@ -84,7 +94,7 @@ mqtt:
 ```
 http:
   bind: <bind>                  # optional: Interface on which web server will listen, default 0.0.0.0
-  port: <port>                  # Port on which web server will listen, default 8080
+  port: <port>                  # optional: Port on which web server will listen, default 8080
   max-connections: <integer>    # optional: Limit the number of concurrent connections, default 100
 ```
 
@@ -94,7 +104,7 @@ The web server exposes the following API:
 
 ## Logging
 ```
-logging:                        # Logging settings
+logging:
   level: INFO                   # optional: Logging level, default DEBUG
 ```
 
@@ -106,6 +116,7 @@ Bindings are defined under the `bindings` key:
 bindings:
 - ...
 ```
+
 All bindings have the following form:
 ```
   - type: event                 # Binding type: event
@@ -140,6 +151,8 @@ python3 -m venv virtualenv
 . ./virtualenv/bin/activate
 python3 ./setup.py develop
 ```
+
+You will want to provide your own iCAL URLs in the config file.
 
 Run the service:
 ```

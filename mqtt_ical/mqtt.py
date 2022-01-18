@@ -39,8 +39,8 @@ class Mqtt:
 
             if auth_type == 'basic':
                 logging.info('Using basic auth')
-                username = self._c.get('username', None)
-                password = self._c.get('password', None)
+                username = auth.get('username', None)
+                password = auth.get('password', None)
                 self._client.username_pw_set(username, password)
 
             elif auth_type == 'mtls':
@@ -79,8 +79,12 @@ class Mqtt:
         logging.info('Connecting to %s:%s', connect['host'], connect['port'])
         self._client.connect(**connect)
 
-    def _on_connect(self, _client, _userdata, _flags, _rc):
-        logging.info("On Connect")
+    def _on_connect(self, _client, _userdata, flags, rc):
+        if rc != 0:
+            logging.error("Bad Connect: %s rc=%s", flags, rc)
+            return
+
+        logging.info("On Connect: %s", flags)
         self.connect_timestamp = paho.mqtt.client.time_func()
 
         self._notify_watchers(True)
@@ -161,7 +165,10 @@ class Mqtt:
             return
         topic = self._topic(topic)
         logging.debug("Publish %s: %s", topic, payload)
-        self._client.publish(topic, payload=payload, qos=qos, retain=retain)
+        try:
+            self._client.publish(topic, payload=payload, qos=qos, retain=retain)
+        except TypeError as ex:
+            logging.error('%s Value "%s" is a %s', ex, payload, type(payload))
 
 
 class TopicMatcher:

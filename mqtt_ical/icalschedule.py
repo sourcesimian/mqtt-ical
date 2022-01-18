@@ -17,15 +17,18 @@ class ICalSchedule:
             return
         self._state = state
         if not self._enable:
-            logging.debug('Skipped switch: %s', state)
+            logging.debug('{%s} Skipped switch: %s', self._match, state)
         else:
-            logging.debug("Switch: %s", state)
+            logging.debug("{%s} Switch: %s", self._match, state)
             self._on_state_change(state)
 
     def enable(self, enable):
-        if enable and enable != self._enable:
-            self._on_update_now()
-            logging.info('%s and Switching: %s', 'Enabled' if enable else 'Disabled', self._state)
-            self._on_state_change(self._state)
+        if enable != self._enable:
+            if enable:
+                self._on_update_now()
+                logging.info('{%s} Enabled and setting: %s', self._match, 'active' if self._state else 'default')
+                self._on_state_change(self._state)
+            else:
+                logging.info('{%s} Disabled', self._match)
 
         self._enable = enable

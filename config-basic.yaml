@@ -11,7 +11,7 @@ mqtt:
   host: broker.emqx.io
   port: 1883
   client-id: mqtt-ical-demo
-  topic-prefix: demo/mqtt-ical
+  topic-prefix: sourcesimian/mqtt-ical/demo
 
 http:
   port: 8080
