@@ -19,6 +19,7 @@ A service which publishes values to MQTT topics based on events in an iCal Calen
   - [Bindings](#bindings)
 - [Contribution](#contribution)
   - [Development](#development)
+- [Alternatives](#alternatives)
 - [License](#license)
 
 # Installation
@@ -158,6 +159,14 @@ Run the service:
 ```
 mqtt-ical ./config-demo.yaml
 ```
+
+# Alternatives
+I like **mqtt-ical** because it can be orchestrated as a single, source controlled and managed micro-service in a MQTT centric architecture which makes for a clean and reliable deployment. There are however alternatives that may be more suitable to your needs:
+
+| Alternative | Description |
+|---|---|
+| NodeRED::[ical-events](https://flows.nodered.org/node/node-red-contrib-ical-events) | [NodeRED](https://nodered.org/) is a flow-based visual programming tool for wiring together devices, with built in MQTT integration. The ical-events module gets the events from an ical-URL, a caldav-server or from iCloud. |
+
 
 # License
 In the spirit of the Hackers of the [Tech Model Railroad Club](https://en.wikipedia.org/wiki/Tech_Model_Railroad_Club) from the [Massachusetts Institute of Technology](https://en.wikipedia.org/wiki/Massachusetts_Institute_of_Technology), who gave us all so very much to play with. The license is [MIT](LICENSE).
