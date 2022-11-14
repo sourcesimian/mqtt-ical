@@ -3,3 +3,4 @@
 virtualenv/
 venv/
 reports/
+.direnv/
