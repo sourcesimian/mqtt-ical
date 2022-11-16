@@ -31,33 +31,27 @@ class Binding:
             on_ical_change = partial(self._on_ical_change, binding_blob)
             ical = self._ical.register(binding_blob['ical']['url'], binding_blob['ical']['match'], on_ical_change)
 
-            on_mqtt_change = partial(self._on_mqtt, binding_blob)
-
             mqtt = MqttNode(self._mqtt,
-                            binding_blob['mqtt']['state']['topic'],
-                            binding_blob['mqtt']['state']['retain'],
-                            binding_blob['mqtt']['state']['qos'],
-                            binding_blob['mqtt']['mode']['topic'],
-                            on_mqtt_change)
+                            binding_blob['mqtt']['state'], partial(self._on_state, binding_blob),
+                            binding_blob['mqtt']['mode'], partial(self._on_mode, binding_blob),
+                            binding_blob['mqtt']['disable'], partial(self._on_disable, binding_blob))
 
             self._binding_map[self._blob_id(binding_blob)] = {'ical': ical, 'mqtt': mqtt}
         else:
             logging.warning('Unsupported binding type "%s"', binding_blob['type'])
 
     def _on_ical_change(self, binding_blob, state):
-        if state:
-            payload = binding_blob['mqtt']['state']['active']
-        else:
-            payload = binding_blob['mqtt']['state']['default']
+        logging.debug('Set state: %s', state)
+        self._binding_map[self._blob_id(binding_blob)]['mqtt'].set_state(state)
 
-        logging.debug('Set state: %s', payload)
-        self._binding_map[self._blob_id(binding_blob)]['mqtt'].set_state(payload)
-
-    def _on_mqtt(self, binding_blob, value, _timestamp):
+    def _on_state(self, binding_blob, state):
         ical = self._binding_map[self._blob_id(binding_blob)]['ical']
-        if value == binding_blob['mqtt']['mode']['enable']:
-            ical.enable(True)
-        elif value == binding_blob['mqtt']['mode']['disable']:
-            ical.enable(False)
-        else:
-            logging.warning('Unrecognised mode: %s', value)
+        ical.state(state)
+
+    def _on_mode(self, binding_blob, auto):
+        ical = self._binding_map[self._blob_id(binding_blob)]['ical']
+        ical.auto(auto)
+
+    def _on_disable(self, binding_blob, disable):
+        ical = self._binding_map[self._blob_id(binding_blob)]['ical']
+        ical.disable(disable)

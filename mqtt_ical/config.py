@@ -33,6 +33,10 @@ class Config:
             default(binding['mqtt']['mode'], 'topic', None)
             default(binding['mqtt']['mode'], 'enable', 'AUTO')
             default(binding['mqtt']['mode'], 'disable', 'MANUAL')
+            default(binding['mqtt'], 'disable', {})
+            default(binding['mqtt']['disable'], 'topic', None)
+            default(binding['mqtt']['disable'], 'active', 'ON')
+            default(binding['mqtt']['disable'], 'inactive', 'OFF')
 
         self._hash = hashlib.md5(str(random.random()).encode('utf-8')).hexdigest()
 

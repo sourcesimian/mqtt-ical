@@ -28,7 +28,7 @@ bindings:
     mqtt:
       state:
         topic: time/morning
-        default: "NO"
+        default: "-"
         active: "MORNING"
         retain: True
         qos: 1
@@ -42,7 +42,7 @@ bindings:
     mqtt:
       state:
         topic: time/day
-        default: "NO"
+        default: "-"
         active: "DAY"
         retain: True
         qos: 1
@@ -58,7 +58,7 @@ bindings:
     mqtt:
       state:
         topic: time/night
-        default: "NO"
+        default: "-"
         active: "NIGHT"
         retain: True
         qos: 1

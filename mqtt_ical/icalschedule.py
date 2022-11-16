@@ -7,7 +7,8 @@ class ICalSchedule:
         self._on_state_change = on_state_change
         self._on_update_now = on_update_now
         self._state = None
-        self._enable = True
+        self._auto = True
+        self._disable = False
 
     def is_match(self, summary):
         return summary == self._match
@@ -16,19 +17,37 @@ class ICalSchedule:
         if self._state == state:
             return
         self._state = state
-        if not self._enable:
-            logging.debug('{%s} Skipped switch: %s', self._match, state)
+        if not self._auto:
+            logging.info('{%s} Skipped switch: %s', self._match, state)
         else:
-            logging.debug("{%s} Switch: %s", self._match, state)
+            logging.info("{%s} Switch: %s", self._match, state)
             self._on_state_change(state)
 
-    def enable(self, enable):
-        if enable != self._enable:
-            if enable:
-                self._on_update_now()
-                logging.info('{%s} Enabled and setting: %s', self._match, 'active' if self._state else 'default')
-                self._on_state_change(self._state)
-            else:
-                logging.info('{%s} Disabled', self._match)
+    def _update(self):
+        self._on_update_now()
+        if self._disable:
+            self._state = False
+        self.set_state(self._state)
 
-        self._enable = enable
+    def state(self, state):
+        self._state = state
+
+    def auto(self, enable):
+        if enable != self._auto:
+            self._auto = enable
+            if enable:
+                logging.info('{%s} Auto', self._match)
+                self._update()
+            else:
+                logging.info('{%s} Manual', self._match)
+
+    def disable(self, disable):
+        if self._disable != disable:
+            self._disable = disable
+            if self._auto:
+                if disable:
+                    logging.info('{%s} Disable', self._match)
+                    self.set_state(False)
+                else:
+                    logging.info('{%s} Enable', self._match)
+                    self._update()
