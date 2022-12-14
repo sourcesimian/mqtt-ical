@@ -25,7 +25,7 @@ class MqttNode:
         elif payload == self._state_blob['default']:
             self._on_state(False)
         else:
-            logging.warning('Unrecognised mode: %s', payload)
+            logging.warning('Unrecognised state: %s', payload)
 
     def on_payload_mode(self, payload, timestamp):
         if payload == self._mode_blob['enable']:
