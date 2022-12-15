@@ -17,7 +17,7 @@ class ICalSchedule:
         if self._state == state:
             return
         self._state = state
-        if not self._auto or self._disable:
+        if not self._auto or (self._disable and state is True):
             logging.info('{%s} Skipped switch: %s', self._match, state)
         else:
             logging.info("{%s} Switch: %s", self._match, state)
