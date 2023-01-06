@@ -18,7 +18,7 @@ class Binding:
 
     def _on_mqtt_reload(self, payload, _timestamp):
         if payload == self._ical.reload_payload:
-            self._ical.update_now()
+            self._ical.force_update()
 
     def _blob_id(self, blob):
         ret = []
@@ -28,7 +28,7 @@ class Binding:
 
     def add_binding(self, binding_blob):
         if binding_blob['type'] == 'event':
-            on_ical_change = partial(self._on_ical_change, binding_blob)
+            on_ical_change = partial(self._on_ical_active, binding_blob)
             ical = self._ical.register(binding_blob['ical']['url'], binding_blob['ical']['match'], on_ical_change)
 
             mqtt = MqttNode(self._mqtt,
@@ -40,9 +40,9 @@ class Binding:
         else:
             logging.warning('Unsupported binding type "%s"', binding_blob['type'])
 
-    def _on_ical_change(self, binding_blob, state):
-        logging.debug('Set state: %s', state)
-        self._binding_map[self._blob_id(binding_blob)]['mqtt'].set_state(state)
+    def _on_ical_active(self, binding_blob, active):
+        logging.debug('Set active: %s', active)
+        self._binding_map[self._blob_id(binding_blob)]['mqtt'].set_state(active)
 
     def _on_state(self, binding_blob, state):
         ical = self._binding_map[self._blob_id(binding_blob)]['ical']

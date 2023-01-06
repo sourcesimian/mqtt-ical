@@ -30,7 +30,7 @@ class ICal:
         def loop():
             while True:
                 now = self._now()
-                if not self._next_update or self._next_update < now:
+                if not self._next_update or self._next_update <= now:
                     self._update(now)
                 else:
                     logging.debug('Skipping update')
@@ -45,15 +45,21 @@ class ICal:
         self._calendars[url].append(sched)
         return sched
 
-    def update_now(self):
-        logging.info('Update now')
+    def force_update(self):
+        logging.info('Force update')
+        for url, schedules in self._calendars.items():
+            for schedule in schedules:
+                schedule.clear_last_active()
+        self._update_now()
+
+    def _update_now(self):
         now = self._now()
         self._update(now)
 
     def _on_update_now(self):
         if self._last_update and (self._now() - self._last_update) < timedelta(seconds=3):
             return
-        self.update_now()
+        self._update_now()
         self._last_update = self._now()
 
     def _update(self, now):
@@ -98,14 +104,14 @@ class ICal:
                     if schedule and start <= now < end:
                         logging.debug("Current event: %s->%s %s", start, end, summary)
                         next_update = min(next_update, end)
-                        schedule.set_state(True)
+                        schedule.set_active(True)
                         off.remove(schedule)
                     else:
                         if start > now:
                             next_update = min(next_update, start)
 
         for schedule in off:
-            schedule.set_state(False)
+            schedule.set_active(False)
 
         self._next_update = next_update
         logging.debug("Next update: %s", self._next_update)

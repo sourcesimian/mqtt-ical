@@ -64,3 +64,19 @@ bindings:
         qos: 1
       mode:
         topic: mode
+
+  - type: event
+    ical:
+      match: "Switch"
+      url: "https://calendar.google.com/calendar/ical/9lmgcb7dk1gs8tulr8fctc4mfg%40group.calendar.google.com/private-d6909b7ca113276ab221b59fd1dc1015/basic.ics"
+    mqtt:
+      state:
+        topic: switch
+        default: "OFF"
+        active: "ON"
+        retain: True
+        qos: 1
+      mode:
+        topic: mode
+      disable:
+        topic: switch-disable

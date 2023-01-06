@@ -25,7 +25,7 @@ class MqttNode:
         elif payload == self._state_blob['default']:
             self._on_state(False)
         else:
-            logging.warning('Unrecognised state: %s', payload)
+            logging.warning('Unrecognised state: %s "%s"', self._state_blob['topic'], payload)
 
     def on_payload_mode(self, payload, timestamp):
         if payload == self._mode_blob['enable']:
@@ -33,7 +33,7 @@ class MqttNode:
         elif payload == self._mode_blob['disable']:
             self._on_mode(False)
         else:
-            logging.warning('Unrecognised mode: %s', payload)
+            logging.warning('Unrecognised mode: %s "%s"', self._mode_blob['topic'], payload)
 
     def on_payload_disable(self, payload, timestamp):
         if payload == self._disable_blob['active']:
@@ -41,7 +41,7 @@ class MqttNode:
         elif payload == self._disable_blob['inactive']:
             self._on_disable(False)
         else:
-            logging.warning('Unrecognised disable: %s', payload)
+            logging.warning('Unrecognised disable: %s "%s"', self._disable_blob['topic'], payload)
 
     def set_state(self, state):
         assert isinstance(state, bool)

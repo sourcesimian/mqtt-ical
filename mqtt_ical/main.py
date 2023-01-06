@@ -31,8 +31,8 @@ def cli():
 
     ical = mqtt_ical.ical.ICal(config.ical)
     mqtt = mqtt_ical.mqtt.Mqtt(config.mqtt)
-    on_update = partial(ical.update_now)
-    server = mqtt_ical.server.Server(config.http, on_update)
+    on_force_update = partial(ical.force_update)
+    server = mqtt_ical.server.Server(config.http, on_force_update)
 
     binding = mqtt_ical.binding.Binding(mqtt, ical)
 
