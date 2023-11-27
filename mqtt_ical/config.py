@@ -29,6 +29,7 @@ class Config:
             default(binding['mqtt']['state'], 'active', 'ON')
             default(binding['mqtt']['state'], 'retain', False)
             default(binding['mqtt']['state'], 'qos', 0)
+            default(binding['mqtt']['state'], 'events-topic', None)
             default(binding['mqtt'], 'mode', {})
             default(binding['mqtt']['mode'], 'topic', None)
             default(binding['mqtt']['mode'], 'enable', 'AUTO')

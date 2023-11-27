@@ -2,9 +2,10 @@ import logging
 
 
 class ICalSchedule:
-    def __init__(self, match, on_state_change, on_update_now):
+    def __init__(self, match, on_state_change, on_events_change, on_update_now):
         self._match = match
         self._on_state_change = on_state_change
+        self._on_events_change = on_events_change
         self._on_update_now = on_update_now
         self._state = None
         self._enable = True
@@ -21,6 +22,9 @@ class ICalSchedule:
         else:
             logging.debug("{%s} Switch: %s", self._match, state)
             self._on_state_change(state)
+
+    def update_events(self, events):
+        self._on_events_change(events)
 
     def enable(self, enable):
         if enable != self._enable:
