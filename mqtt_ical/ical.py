@@ -1,13 +1,11 @@
 import logging
-import urllib.request
 import urllib.error
-
-from datetime import datetime, timezone, timedelta
-
-import icalendar
-import recurring_ical_events
+import urllib.request
+from datetime import date, datetime, time, timedelta, timezone
 
 import gevent
+import icalendar
+import recurring_ical_events
 
 from mqtt_ical.icalschedule import ICalSchedule
 
@@ -38,8 +36,13 @@ class ICal:
                 gevent.sleep(sleep)
         return gevent.spawn(loop)
 
-    def register(self, url, match, on_state_change):
-        sched = ICalSchedule(match, on_state_change, self._on_update_now)
+    def register(self, url, match, on_state_change, on_events_change):
+        sched = ICalSchedule(
+            match=match,
+            on_state_change=on_state_change,
+            on_events_change=on_events_change,
+            on_update_now=self._on_update_now
+        )
         if url not in self._calendars:
             self._calendars[url] = []
         self._calendars[url].append(sched)
@@ -61,14 +64,20 @@ class ICal:
         self._update_states(now)
 
     def _update_events(self, now):
-        for url, _ in self._calendars.items():
+        for url, schedules in self._calendars.items():
             calendar = self._get_ical(url)
             if calendar:
                 fetch_window = self._c.get('fetch-window', 86400)
+                events = list(recurring_ical_events.of(calendar).between(
+                    now - timedelta(seconds=fetch_window),
+                    now + timedelta(seconds=fetch_window)
+                ))
                 self._events[url] = {
                     'timestamp': now,
-                    'events': list(recurring_ical_events.of(calendar).between(now, now + timedelta(seconds=fetch_window)))
+                    'events': events,
                 }
+                for schedule in schedules:
+                    schedule.update_events(events)
 
     def _update_states(self, now):
         poll_period = self._c.get('poll-period', 3600)
@@ -85,21 +94,23 @@ class ICal:
                     continue
                 for event in events['events']:
                     start = event["DTSTART"].dt
+                    if isinstance(start, date):
+                        start = datetime.combine(start, time(0)).replace(tzinfo=now.tzinfo)
                     end = event["DTEND"].dt
+                    if isinstance(end, date):
+                        end = datetime.combine(end, time(0)).replace(tzinfo=now.tzinfo)
                     summary = str(event['SUMMARY'])
 
-                    schedule = None
-                    for schedule in schedules:
-                        if schedule.is_match(summary):
-                            break
-                    else:
-                        continue
+                    matching_schedule = next(
+                        (schedule for schedule in schedules if schedule.is_match(summary)),
+                        None
+                    )
 
-                    if schedule and start <= now < end:
+                    if matching_schedule and start <= now < end:
                         logging.debug("Current event: %s->%s %s", start, end, summary)
                         next_update = min(next_update, end)
-                        schedule.set_state(True)
-                        off.remove(schedule)
+                        matching_schedule.set_state(True)
+                        off.remove(matching_schedule)
                     else:
                         if start > now:
                             next_update = min(next_update, start)

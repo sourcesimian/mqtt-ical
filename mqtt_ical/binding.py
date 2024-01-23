@@ -27,24 +27,33 @@ class Binding:
         return '-'.join(ret)
 
     def add_binding(self, binding_blob):
-        if binding_blob['type'] == 'event':
-            on_ical_change = partial(self._on_ical_change, binding_blob)
-            ical = self._ical.register(binding_blob['ical']['url'], binding_blob['ical']['match'], on_ical_change)
+        if binding_blob["type"] == "event":
+            on_state_change = partial(self._on_state_change, binding_blob)
+            on_events_change = partial(self._on_events_change, binding_blob)
+            ical = self._ical.register(
+                url=binding_blob["ical"]["url"],
+                match=binding_blob["ical"]["match"],
+                on_state_change=on_state_change,
+                on_events_change=on_events_change,
+            )
 
             on_mqtt_change = partial(self._on_mqtt, binding_blob)
 
-            mqtt = MqttNode(self._mqtt,
-                            binding_blob['mqtt']['state']['topic'],
-                            binding_blob['mqtt']['state']['retain'],
-                            binding_blob['mqtt']['state']['qos'],
-                            binding_blob['mqtt']['mode']['topic'],
-                            on_mqtt_change)
+            mqtt = MqttNode(
+                mqtt=self._mqtt,
+                state_path=binding_blob["mqtt"]["state"]["topic"],
+                events_path=binding_blob["mqtt"]["state"]["events-topic"],
+                retain=binding_blob["mqtt"]["state"]["retain"],
+                qos=binding_blob["mqtt"]["state"]["qos"],
+                mode_path=binding_blob["mqtt"]["mode"]["topic"],
+                on_mode=on_mqtt_change,
+            )
 
             self._binding_map[self._blob_id(binding_blob)] = {'ical': ical, 'mqtt': mqtt}
         else:
             logging.warning('Unsupported binding type "%s"', binding_blob['type'])
 
-    def _on_ical_change(self, binding_blob, state):
+    def _on_state_change(self, binding_blob, state):
         if state:
             payload = binding_blob['mqtt']['state']['active']
         else:
@@ -52,6 +61,9 @@ class Binding:
 
         logging.debug('Set state: %s', payload)
         self._binding_map[self._blob_id(binding_blob)]['mqtt'].set_state(payload)
+
+    def _on_events_change(self, binding_blob, events):
+        self._binding_map[self._blob_id(binding_blob)]["mqtt"].set_events(events)
 
     def _on_mqtt(self, binding_blob, value, _timestamp):
         ical = self._binding_map[self._blob_id(binding_blob)]['ical']
