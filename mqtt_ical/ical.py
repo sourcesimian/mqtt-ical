@@ -1,13 +1,11 @@
 import logging
-import urllib.request
 import urllib.error
-
-from datetime import datetime, timezone, timedelta
-
-import icalendar
-import recurring_ical_events
+import urllib.request
+from datetime import date, datetime, time, timedelta, timezone
 
 import gevent
+import icalendar
+import recurring_ical_events
 
 from mqtt_ical.icalschedule import ICalSchedule
 
@@ -70,7 +68,10 @@ class ICal:
             calendar = self._get_ical(url)
             if calendar:
                 fetch_window = self._c.get('fetch-window', 86400)
-                events = list(recurring_ical_events.of(calendar).between(now, now + timedelta(seconds=fetch_window)))
+                events = list(recurring_ical_events.of(calendar).between(
+                    now - timedelta(seconds=fetch_window),
+                    now + timedelta(seconds=fetch_window)
+                ))
                 self._events[url] = {
                     'timestamp': now,
                     'events': events,
@@ -93,7 +94,11 @@ class ICal:
                     continue
                 for event in events['events']:
                     start = event["DTSTART"].dt
+                    if isinstance(start, date):
+                        start = datetime.combine(start, time(0)).replace(tzinfo=now.tzinfo)
                     end = event["DTEND"].dt
+                    if isinstance(end, date):
+                        end = datetime.combine(end, time(0)).replace(tzinfo=now.tzinfo)
                     summary = str(event['SUMMARY'])
 
                     matching_schedule = next(
